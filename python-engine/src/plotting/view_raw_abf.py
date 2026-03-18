@@ -1,0 +1,72 @@
+import os
+import matplotlib.pyplot as plt
+
+def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, sweep_number=None, start_time=None, end_time=None):
+    """
+    Plots raw electrophysiology recordings from ABF files.
+    
+    Args:
+        time: Time array for the x-axis
+        sweepY: 2D array of current measurements (sweeps x time points)
+        filename: Name of the source ABF file
+        output_dir: Directory to save the plot image
+        channel: Channel number being plotted
+        channel_labels: Labels for channels
+        sweep_number: Optional specific sweep to plot; if None, plots all sweeps
+        start_time: Optional start time for zooming (seconds)
+        end_time: Optional end time for zooming (seconds)
+    
+    Returns:
+        str: File path to the saved plot image
+    """
+    # Determine which sweeps to plot
+    sweeps_to_plot = [int(sweep_number)] if sweep_number is not None else range(len(sweepY))
+    
+    # Set up the plot
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    
+    # Set colormap for better visualization of multiple sweeps
+    colormap = plt.get_cmap('cool')
+    colors = [colormap(x/len(sweepY)) for x in range(len(sweepY))]
+
+    # Loop through sweeps and plot them
+    for idx, sweep in enumerate(sweeps_to_plot):
+        dataX = time + .025 * idx
+        dataY = sweepY[sweep] + 40 * idx
+        
+        ax1.plot(dataX, dataY, color=colors[sweep], alpha=.5)
+    
+    # Format the charts
+    sweep_label = f" - Sweep {sweep_number}" if sweep_number is not None else ""
+    
+    # First subplot (current)
+    ax1.set_title(f"Raw Recording: {filename}{sweep_label}")
+    ax1.set_xlabel(channel_labels[0])
+    ax1.set_ylabel(channel_labels[1])
+    ax1.grid(True, alpha=0.3)
+
+    # Apply time zoom if specified
+    if start_time is not None and end_time is not None:
+        start_time = float(start_time)
+        end_time = float(end_time)
+        ax1.set_xlim(start_time, end_time)
+        
+        time_mask = (dataX >= start_time) & (dataX <= end_time)
+        y_in_range = dataY[time_mask]
+
+        if len(y_in_range) > 0:
+            ax1.set_ylim(min(y_in_range)-10, max(y_in_range)+10)
+
+    plt.tight_layout()
+    
+    # Save the plot
+    os.makedirs(output_dir, exist_ok=True)
+    sweep_suffix = f"_raw_plot_sweep_{sweep_number}" if sweep_number is not None else "_raw_plot"
+    zoom_suffix = f"_t{start_time}-{end_time}" if start_time is not None and end_time is not None else ""
+    plot_filename = filename.replace('.abf', f'{sweep_suffix}{zoom_suffix}_channel_{channel}.png')
+    plot_path = os.path.join(output_dir, plot_filename)
+    print(f"Saving raw plot to: {plot_path}", flush=True)
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+    
+    return plot_path
