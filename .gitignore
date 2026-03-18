@@ -50,3 +50,6 @@ __pypackages__/
 
 # Data
 data/
+
+#output
+output/
