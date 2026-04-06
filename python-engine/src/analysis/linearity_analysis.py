@@ -10,9 +10,11 @@ from src.plotting.iv_analysis_plots import (
     plot_iv_relationship,
     plot_predicted_current_over_time,
     plot_slopes_over_time,
+    plot_Gsyn_Ge_Gi_over_time,
+    plot_ei_ratio_over_time,
+    plot_e_fraction_over_time,
 )
-
-## TODO clean up code and find intercept on x axis and calculate Gi
+from src.utils.time import seconds_to_milliseconds
 
 def analyze_iv_relationship(file_data, filename, time_window, output_dir):
     """
@@ -60,6 +62,11 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
         
         currents.append(current)
         voltages.append(voltage)
+
+    # Use first file timing as the common time axis for regression-by-time outputs.
+    first_clamp_time = np.asarray(first_data['clamp_time'], dtype=float)
+    window_indices = get_window_indices(first_clamp_time, time_window)
+    time_axis_ms = seconds_to_milliseconds(first_clamp_time[window_indices])
     
     currents = np.array(currents)
     voltages = np.array(voltages)
@@ -78,12 +85,18 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
             'outlier_indices': np.array([])
         }
     
+    # Estimate leak current and correct currents
     stim_rise_idx = stimuli_time[0] if stimuli_time is not None else None
     leak_current = find_leak_current(currents, voltages, stim_rise_idx)
-    print(f"Estimated leak current: {leak_current[0]} pA", flush=True)
 
-    regression = run_regression_over_time(voltages, currents)
-    regression.slopes = regression.slopes - leak_current[0]
+    leak_slope = leak_current[0]
+    leak_intercept = leak_current[1]
+
+    leak_estimated = leak_slope * voltages + leak_intercept
+    currents_corrected = currents - leak_estimated
+
+    # Fit regression on leak-corrected currents
+    regression = run_regression_over_time(voltages, currents_corrected)
 
     slopes = regression.slopes
     intercepts = regression.intercepts
@@ -97,6 +110,7 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
         output_dir,
         time_window,
         clamp_channel_labels[1],
+        time_axis_ms=time_axis_ms,
     )
 
     plot_slopes_over_time(
@@ -105,6 +119,7 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
         output_dir,
         time_window,
         clamp_channel_labels[1],
+        time_axis_ms=time_axis_ms,
     )
 
     mean_voltages = np.mean(voltages, axis=1)
@@ -133,12 +148,52 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
         membrane_channel_labels[1],
         clamp_channel_labels[1],
     )
+
+    # Find reversal potential (x-intercept where current = 0)
+    # From I = slope * V + intercept, when I = 0: V = -intercept / slope
+    reversal_potentials = -intercepts / slopes
+    reversal_potential = -plot_intercept / plot_slope
+    
+    E_e = 0
+    E_i = -60
+
+    G_i = (slopes * (E_e - reversal_potentials)) / (E_e - E_i)    
+    G_e = slopes - G_i
+
+    plot_Gsyn_Ge_Gi_over_time(
+        slopes,
+        G_e,
+        G_i,
+        filename,
+        output_dir,
+        time_window,
+        time_axis_ms=time_axis_ms,
+    )
+
+    GeGi_ratio = G_e / G_i
+    plot_ei_ratio_over_time(
+        GeGi_ratio,
+        filename,
+        output_dir,
+        time_window,
+        time_axis_ms=time_axis_ms,
+    )
+
+    Ge_fraction = G_e / slopes
+    plot_e_fraction_over_time(
+        Ge_fraction,
+        filename,
+        output_dir,
+        time_window,
+        time_axis_ms=time_axis_ms,
+    )
     
     return {
         'slope': plot_slope,
         'intercept': plot_intercept,
         'r_squared': plot_r_squared,
         'p_value': plot_p_value,
+        'x-intercept': reversal_potential,
     }
 
 def find_leak_current(currents, voltages, window_end):

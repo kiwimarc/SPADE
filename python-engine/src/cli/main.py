@@ -126,7 +126,8 @@ def _handle_analyze_iv(args, start_time, end_time):
         f"Slope: {iv_results['slope']:.6f}, "
         f"Intercept: {iv_results['intercept']:.6f}, "
         f"R²: {iv_results['r_squared']:.4f}, "
-        f"P-value: {iv_results['p_value']:.6f}",
+        f"P-value: {iv_results['p_value']:.6f},",
+        f"Reversal Potential: {iv_results['x-intercept']:.2f} mV, ",
         flush=True,
     )
 
