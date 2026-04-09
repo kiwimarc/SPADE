@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from src.analysis.iv_regression import (
@@ -14,9 +16,20 @@ from src.plotting.iv_analysis_plots import (
     plot_ei_ratio_over_time,
     plot_e_fraction_over_time,
 )
+from src.data_io.csv_writer import write_series_csv as _write_series_csv
 from src.utils.time import seconds_to_milliseconds
 
-def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60, output_dir=None, export_format="png"):
+
+def _zoom_suffix(time_window):
+    if time_window is None:
+        return ""
+    return f"_t{time_window[0]}-{time_window[1]}"
+
+
+def _safe_output_name(filename, suffix):
+    return filename.replace(".abf", suffix).replace("*", "%")
+
+def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60, output_dir=None, export_format="png", export_csv=False):
     """
     Analyzes I-V relationship: fits linear regression, computes R², detects outliers.
     
@@ -33,8 +46,9 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
         i_rev: reversal potential for inhibitory synapses (mV)
         output_dir: directory to save plot
         export_format: format for exporting plots (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+        export_csv: If True, exports data to CSV instead of saving a plot
     Returns:
-        dict: Contains slope, intercept, r_squared, p_value, outlier_indices
+        dict: Contains slope, intercept, r_squared, p_value, x-intercept
     """
     
     currents = []
@@ -106,25 +120,50 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
     predicteds = regression.predicteds
     r_squareds = regression.r_squareds
 
-    plot_predicted_current_over_time(
-        predicteds,
-        filename,
-        output_dir,
-        time_window,
-        clamp_channel_labels[1],
-        time_axis_ms=time_axis_ms,
-        export_format=export_format
-    )
+    zoom_suffix = _zoom_suffix(time_window)
+    output_dir = output_dir or "."
+    os.makedirs(output_dir, exist_ok=True)
 
-    plot_slopes_over_time(
-        slopes,
-        filename,
-        output_dir,
-        time_window,
-        clamp_channel_labels[1],
-        time_axis_ms=time_axis_ms,
-        export_format=export_format
-    )
+    if export_csv:
+        predicted_csv = os.path.join(
+            output_dir,
+            _safe_output_name(filename, f"{zoom_suffix}_predicted_current.csv"),
+        )
+        slopes_csv = os.path.join(
+            output_dir,
+            _safe_output_name(filename, f"{zoom_suffix}_slopes.csv"),
+        )
+
+        _write_series_csv(
+            predicted_csv,
+            ["time_ms", "predicted_current"],
+            zip(time_axis_ms, predicteds),
+        )
+        _write_series_csv(
+            slopes_csv,
+            ["time_ms", "slope"],
+            zip(time_axis_ms, slopes),
+        )
+    else:
+        plot_predicted_current_over_time(
+            predicteds,
+            filename,
+            output_dir,
+            time_window,
+            clamp_channel_labels[1],
+            time_axis_ms=time_axis_ms,
+            export_format=export_format
+        )
+
+        plot_slopes_over_time(
+            slopes,
+            filename,
+            output_dir,
+            time_window,
+            clamp_channel_labels[1],
+            time_axis_ms=time_axis_ms,
+            export_format=export_format
+        )
 
     mean_voltages = np.mean(voltages, axis=1)
     mean_currents = np.mean(currents, axis=1)
@@ -141,18 +180,29 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
 
     mean_predicteds = plot_slope * mean_voltages + plot_intercept
 
-    plot_iv_relationship(
-        mean_voltages,
-        mean_currents,
-        mean_predicteds,
-        plot_r_squared,
-        filename,
-        output_dir,
-        time_window,
-        membrane_channel_labels[1],
-        clamp_channel_labels[1],
-        export_format=export_format
-    )
+    if export_csv:
+        iv_csv = os.path.join(
+            output_dir,
+            _safe_output_name(filename, f"{zoom_suffix}_iv_analysis.csv"),
+        )
+        _write_series_csv(
+            iv_csv,
+            ["mean_voltage", "mean_current", "mean_predicted"],
+            zip(mean_voltages, mean_currents, mean_predicteds),
+        )
+    else:
+        plot_iv_relationship(
+            mean_voltages,
+            mean_currents,
+            mean_predicteds,
+            plot_r_squared,
+            filename,
+            output_dir,
+            time_window,
+            membrane_channel_labels[1],
+            clamp_channel_labels[1],
+            export_format=export_format
+        )
 
     # Find reversal potential (x-intercept where current = 0)
     # From I = slope * V + intercept, when I = 0: V = -intercept / slope
@@ -162,36 +212,69 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
     G_i = (slopes * (e_rev - reversal_potentials)) / (e_rev - i_rev)
     G_e = slopes - G_i
 
-    plot_Gsyn_Ge_Gi_over_time(
-        slopes,
-        G_e,
-        G_i,
-        filename,
-        output_dir,
-        time_window,
-        time_axis_ms=time_axis_ms,
-        export_format=export_format
-    )
+    if export_csv:
+        gsyn_csv = os.path.join(
+            output_dir,
+            _safe_output_name(filename, f"{zoom_suffix}_Gsyn_Ge_Gi_over_time.csv"),
+        )
+        _write_series_csv(
+            gsyn_csv,
+            ["time_ms", "G_syn", "G_e", "G_i"],
+            zip(time_axis_ms, slopes, G_e, G_i),
+        )
+    else:
+        plot_Gsyn_Ge_Gi_over_time(
+            slopes,
+            G_e,
+            G_i,
+            filename,
+            output_dir,
+            time_window,
+            time_axis_ms=time_axis_ms,
+            export_format=export_format
+        )
 
     GeGi_ratio = G_e / G_i
-    plot_ei_ratio_over_time(
-        GeGi_ratio,
-        filename,
-        output_dir,
-        time_window,
-        time_axis_ms=time_axis_ms,
-        export_format=export_format
-    )
+    if export_csv:
+        ei_ratio_csv = os.path.join(
+            output_dir,
+            _safe_output_name(filename, f"{zoom_suffix}_EI_ratio_over_time.csv"),
+        )
+        _write_series_csv(
+            ei_ratio_csv,
+            ["time_ms", "ei_ratio"],
+            zip(time_axis_ms, GeGi_ratio),
+        )
+    else:
+        plot_ei_ratio_over_time(
+            GeGi_ratio,
+            filename,
+            output_dir,
+            time_window,
+            time_axis_ms=time_axis_ms,
+            export_format=export_format
+        )
 
     Ge_fraction = G_e / slopes
-    plot_e_fraction_over_time(
-        Ge_fraction,
-        filename,
-        output_dir,
-        time_window,
-        time_axis_ms=time_axis_ms,
-        export_format=export_format
-    )
+    if export_csv:
+        e_fraction_csv = os.path.join(
+            output_dir,
+            _safe_output_name(filename, f"{zoom_suffix}_E_fraction_over_time.csv"),
+        )
+        _write_series_csv(
+            e_fraction_csv,
+            ["time_ms", "e_fraction"],
+            zip(time_axis_ms, Ge_fraction),
+        )
+    else:
+        plot_e_fraction_over_time(
+            Ge_fraction,
+            filename,
+            output_dir,
+            time_window,
+            time_axis_ms=time_axis_ms,
+            export_format=export_format
+        )
     
     return {
         'slope': plot_slope,

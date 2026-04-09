@@ -31,9 +31,9 @@ def _sweep_index(sweep_number):
     return int(sweep_number) if sweep_number is not None else None
 
 
-def _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format="png"):
-    time, sweep_y, channel_labels = load_abf(args.abf_file, channel=args.channel)
-    plot_raw_data(
+def _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time, export_format="png"):
+    time, sweep_y, channel_labels = load_abf(args.abf_file, channel=channel)
+    output_path = plot_raw_data(
         time,
         sweep_y,
         filename=filename,
@@ -41,14 +41,19 @@ def _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_
         sweep_number=sweep_number,
         start_time=start_time,
         end_time=end_time,
-        channel=args.channel,
+        channel=channel,
         channel_labels=channel_labels,
         export_format=export_format,
+        export_csv=args.export_csv
     )
+    if args.export_csv:
+        print(f"Raw CSV saved at: {output_path}", flush=True)
+    else:
+        print(f"Raw plot saved at: {output_path}", flush=True)
 
 
-def _handle_extract_peak_current(args, sweep_number, time_window):
-    time, sweep_y, _ = load_abf(args.abf_file, channel=args.channel)
+def _handle_extract_peak_current(args, channel, sweep_number, time_window):
+    time, sweep_y, _ = load_abf(args.abf_file, channel=channel)
     peak_results = extract_peak_current(
         sweep_y,
         time,
@@ -62,8 +67,8 @@ def _handle_extract_peak_current(args, sweep_number, time_window):
         )
 
 
-def _handle_extract_integrated_current(args, sweep_number, time_window):
-    time, sweep_y, _ = load_abf(args.abf_file, channel=args.channel)
+def _handle_extract_integrated_current(args, channel, sweep_number, time_window):
+    time, sweep_y, _ = load_abf(args.abf_file, channel=channel)
     integrated_results = extract_integrated_current(
         sweep_y,
         time,
@@ -74,8 +79,8 @@ def _handle_extract_integrated_current(args, sweep_number, time_window):
         print(f"Sweep {sweep_idx} - Integrated Current: {value}", flush=True)
 
 
-def _handle_extract_current_stats(args, sweep_number, time_window):
-    time, sweep_y, _ = load_abf(args.abf_file, channel=args.channel)
+def _handle_extract_current_stats(args, channel, sweep_number, time_window):
+    time, sweep_y, _ = load_abf(args.abf_file, channel=channel)
     stats_results = extract_current_stats(
         sweep_y,
         time,
@@ -124,7 +129,8 @@ def _handle_analyze_iv(args, clamp_channel, membrane_channel, stimuli_channel, s
         e_rev=e_rev,
         i_rev=i_rev,
         output_dir=args.output_dir,
-        export_format=export_format
+        export_format=export_format,
+        export_csv=args.export_csv
     )
     print(
         f"Slope: {iv_results['slope']:.6f}, "
@@ -143,7 +149,7 @@ def main():
     
     parser.add_argument("--abf_file", type=str, help="Path to the ABF file")
     parser.add_argument("--output_dir", type=str, help="Output path")
-    parser.add_argument("--channel", type=int, default=0, help="Channel index to analyze (default: 0)")
+    parser.add_argument("--export_csv", action="store_true", help="Export to CSV")
 
     # Function calls
     parser.add_argument("--view_raw", dest="view_raw", action="store_true", help="Plot raw data")
@@ -166,18 +172,19 @@ def main():
     clamp_channel = int(kwargs.get("clamp_channel", 0))
     membrane_channel = int(kwargs.get("membrane_channel", 1))
     stimuli_channel = int(kwargs.get("stimuli_channel", 2))
+    channel = int(kwargs.get("channel", 0))
 
     if args.view_raw:
-        _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format)
+        _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time, export_format)
 
     if args.extract_peak_current:
-        _handle_extract_peak_current(args, sweep_number, time_window)
+        _handle_extract_peak_current(args, channel, sweep_number, time_window)
     
     if args.extract_integrated_current:
-        _handle_extract_integrated_current(args, sweep_number, time_window)
+        _handle_extract_integrated_current(args, channel, sweep_number, time_window)
 
     if args.extract_current_stats:
-        _handle_extract_current_stats(args, sweep_number, time_window)
+        _handle_extract_current_stats(args, channel, sweep_number, time_window)
     
     if args.analyze_iv:
         _handle_analyze_iv(args, clamp_channel, membrane_channel, stimuli_channel, start_time, end_time, e_rev, i_rev, export_format)
