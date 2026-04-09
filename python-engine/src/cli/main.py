@@ -31,7 +31,7 @@ def _sweep_index(sweep_number):
     return int(sweep_number) if sweep_number is not None else None
 
 
-def _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format):
+def _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format="png"):
     time, sweep_y, channel_labels = load_abf(args.abf_file, channel=args.channel)
     plot_raw_data(
         time,
@@ -91,15 +91,15 @@ def _handle_extract_current_stats(args, sweep_number, time_window):
         )
 
 
-def _collect_iv_file_data(abf_file_pattern):
+def _collect_iv_file_data(abf_file_pattern, channels=[0, 1, 2]):
     abf_files = sorted(glob(abf_file_pattern, recursive=True))
     print(f"Found {len(abf_files)} ABF files for I-V analysis.", flush=True)
 
     file_data = {}
     for abf_file in abf_files:
-        clamp_time, clamp_sweep_y, clamp_channel_labels = load_abf(abf_file, channel=0)
-        _, membrane_sweep_y, membrane_channel_labels = load_abf(abf_file, channel=1)
-        _, stimuli_sweep_y, stimuli_channel_labels = load_abf(abf_file, channel=2)
+        clamp_time, clamp_sweep_y, clamp_channel_labels = load_abf(abf_file, channel=channels[0])
+        _, membrane_sweep_y, membrane_channel_labels = load_abf(abf_file, channel=channels[1])
+        _, stimuli_sweep_y, stimuli_channel_labels = load_abf(abf_file, channel=channels[2])
 
         file_id = os.path.splitext(os.path.basename(str(abf_file)))[0]
         file_data[file_id] = {
@@ -115,8 +115,8 @@ def _collect_iv_file_data(abf_file_pattern):
     return file_data
 
 
-def _handle_analyze_iv(args, start_time, end_time, e_rev=0, i_rev=-60, export_format="png"):
-    file_data = _collect_iv_file_data(args.abf_file)
+def _handle_analyze_iv(args, clamp_channel, membrane_channel, stimuli_channel, start_time, end_time, e_rev=0, i_rev=-60, export_format="png"):
+    file_data = _collect_iv_file_data(args.abf_file, channels=[clamp_channel, membrane_channel, stimuli_channel])
     iv_results = analyze_iv_relationship(
         file_data,
         filename=os.path.basename(args.abf_file) if args.abf_file else None,
@@ -163,6 +163,9 @@ def main():
     e_rev = int(kwargs.get("e_rev", 0))
     i_rev = int(kwargs.get("i_rev", -60))
     export_format = kwargs.get("export_format", "png")
+    clamp_channel = int(kwargs.get("clamp_channel", 0))
+    membrane_channel = int(kwargs.get("membrane_channel", 1))
+    stimuli_channel = int(kwargs.get("stimuli_channel", 2))
 
     if args.view_raw:
         _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format)
@@ -177,7 +180,7 @@ def main():
         _handle_extract_current_stats(args, sweep_number, time_window)
     
     if args.analyze_iv:
-        _handle_analyze_iv(args, start_time, end_time, e_rev, i_rev, export_format)
+        _handle_analyze_iv(args, clamp_channel, membrane_channel, stimuli_channel, start_time, end_time, e_rev, i_rev, export_format)
 
 
 if __name__ == "__main__":
