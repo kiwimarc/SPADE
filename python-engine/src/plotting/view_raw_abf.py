@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 
-def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, sweep_number=None, start_time=None, end_time=None):
+def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, sweep_number=None, start_time=None, end_time=None, export_format="png"):
     """
     Plots raw electrophysiology recordings from ABF files.
     
@@ -15,6 +15,7 @@ def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, s
         sweep_number: Optional specific sweep to plot; if None, plots all sweeps
         start_time: Optional start time for zooming (seconds)
         end_time: Optional end time for zooming (seconds)
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
     
     Returns:
         str: File path to the saved plot image
@@ -63,10 +64,10 @@ def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, s
     os.makedirs(output_dir, exist_ok=True)
     sweep_suffix = f"_raw_plot_sweep_{sweep_number}" if sweep_number is not None else "_raw_plot"
     zoom_suffix = f"_t{start_time}-{end_time}" if start_time is not None and end_time is not None else ""
-    plot_filename = filename.replace('.abf', f'{sweep_suffix}{zoom_suffix}_channel_{channel}.png')
+    plot_filename = filename.replace('.abf', f'{sweep_suffix}{zoom_suffix}_channel_{channel}.{export_format}')
     plot_path = os.path.join(output_dir, plot_filename)
     print(f"Saving raw plot to: {plot_path}", flush=True)
-    plt.savefig(plot_path, dpi=300)
+    plt.savefig(plot_path, dpi=300, format=export_format)
     plt.close()
     
     return plot_path

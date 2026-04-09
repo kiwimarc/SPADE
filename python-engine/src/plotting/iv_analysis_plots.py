@@ -32,6 +32,7 @@ def plot_predicted_current_over_time(
     time_window,
     y_label,
     time_axis_ms=None,
+    export_format="png"
 ):
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(predicteds, time_axis_ms)
@@ -43,13 +44,13 @@ def plot_predicted_current_over_time(
     plt.ylabel(y_label)
     plt.title(f"Predicted Current Over Time - {filename}")
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_predicted_current.png")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_predicted_current.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
-    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()
 
 
-def plot_slopes_over_time(slopes, filename, output_dir, time_window, y_label, time_axis_ms=None):
+def plot_slopes_over_time(slopes, filename, output_dir, time_window, y_label, time_axis_ms=None, export_format="png"):
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(slopes, time_axis_ms)
 
@@ -60,9 +61,9 @@ def plot_slopes_over_time(slopes, filename, output_dir, time_window, y_label, ti
     plt.ylabel("Slope (nS)")
     plt.title(f"Slopes Over Time - {filename}")
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_slopes.png")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_slopes.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
-    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()
 
 
@@ -76,6 +77,7 @@ def plot_iv_relationship(
     time_window,
     x_label,
     y_label,
+    export_format="png"
 ):
     zoom_suffix = _zoom_suffix(time_window)
 
@@ -88,9 +90,9 @@ def plot_iv_relationship(
     plt.title(f"I/V Relationship of {filename}\nR² = {r_squared:.4f}")
     plt.legend()
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_iv_analysis.png")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_iv_analysis.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
-    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()
 
 def plot_Gsyn_Ge_Gi_over_time(
@@ -101,6 +103,7 @@ def plot_Gsyn_Ge_Gi_over_time(
     output_dir,
     time_window,
     time_axis_ms=None,
+    export_format="png"
 ):
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(G_syn, time_axis_ms)
@@ -115,12 +118,12 @@ def plot_Gsyn_Ge_Gi_over_time(
     plt.title(f"Estimated G_syn, G_e and G_i Over Time - {filename}")
     plt.legend()
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_Gsyn_Ge_Gi_over_time.png")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_Gsyn_Ge_Gi_over_time.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
-    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()
 
-def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_axis_ms=None):
+def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_axis_ms=None, export_format="png"):
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(EI_ratio, time_axis_ms)
 
@@ -132,12 +135,12 @@ def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_ax
     plt.ylabel("E/I Ratio")
     plt.title(f"E/I Ratio Over Time - {filename}")
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_EI_ratio_over_time.png")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_EI_ratio_over_time.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
-    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()
 
-def plot_e_fraction_over_time(E_fraction , filename, output_dir, time_window, time_axis_ms=None):
+def plot_e_fraction_over_time(E_fraction , filename, output_dir, time_window, time_axis_ms=None, export_format="png"):
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(E_fraction, time_axis_ms)
 
@@ -148,7 +151,7 @@ def plot_e_fraction_over_time(E_fraction , filename, output_dir, time_window, ti
     plt.ylabel("E Fraction")
     plt.title(f"E Fraction Over Time - {filename}")
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_E_fraction_over_time.png")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_E_fraction_over_time.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
-    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()

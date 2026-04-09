@@ -31,7 +31,7 @@ def _sweep_index(sweep_number):
     return int(sweep_number) if sweep_number is not None else None
 
 
-def _handle_view_raw(args, filename, sweep_number, start_time, end_time):
+def _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format):
     time, sweep_y, channel_labels = load_abf(args.abf_file, channel=args.channel)
     plot_raw_data(
         time,
@@ -43,6 +43,7 @@ def _handle_view_raw(args, filename, sweep_number, start_time, end_time):
         end_time=end_time,
         channel=args.channel,
         channel_labels=channel_labels,
+        export_format=export_format,
     )
 
 
@@ -114,7 +115,7 @@ def _collect_iv_file_data(abf_file_pattern):
     return file_data
 
 
-def _handle_analyze_iv(args, start_time, end_time, e_rev=0, i_rev=-60):
+def _handle_analyze_iv(args, start_time, end_time, e_rev=0, i_rev=-60, export_format="png"):
     file_data = _collect_iv_file_data(args.abf_file)
     iv_results = analyze_iv_relationship(
         file_data,
@@ -123,6 +124,7 @@ def _handle_analyze_iv(args, start_time, end_time, e_rev=0, i_rev=-60):
         e_rev=e_rev,
         i_rev=i_rev,
         output_dir=args.output_dir,
+        export_format=export_format
     )
     print(
         f"Slope: {iv_results['slope']:.6f}, "
@@ -158,11 +160,12 @@ def main():
     start_time = kwargs.get("start_time")
     end_time = kwargs.get("end_time")
     time_window = _build_time_window(start_time, end_time)
-    e_rev = int(kwargs.get("e_rev")) if kwargs.get("e_rev") is not None else 0
-    i_rev = int(kwargs.get("i_rev")) if kwargs.get("i_rev") is not None else -60
+    e_rev = int(kwargs.get("e_rev", 0))
+    i_rev = int(kwargs.get("i_rev", -60))
+    export_format = kwargs.get("export_format", "png")
 
     if args.view_raw:
-        _handle_view_raw(args, filename, sweep_number, start_time, end_time)
+        _handle_view_raw(args, filename, sweep_number, start_time, end_time, export_format)
 
     if args.extract_peak_current:
         _handle_extract_peak_current(args, sweep_number, time_window)
@@ -174,7 +177,7 @@ def main():
         _handle_extract_current_stats(args, sweep_number, time_window)
     
     if args.analyze_iv:
-        _handle_analyze_iv(args, start_time, end_time, e_rev, i_rev)
+        _handle_analyze_iv(args, start_time, end_time, e_rev, i_rev, export_format)
 
 
 if __name__ == "__main__":
