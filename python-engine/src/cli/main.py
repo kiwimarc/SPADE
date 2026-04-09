@@ -114,12 +114,14 @@ def _collect_iv_file_data(abf_file_pattern):
     return file_data
 
 
-def _handle_analyze_iv(args, start_time, end_time):
+def _handle_analyze_iv(args, start_time, end_time, e_rev=0, i_rev=-60):
     file_data = _collect_iv_file_data(args.abf_file)
     iv_results = analyze_iv_relationship(
         file_data,
         filename=os.path.basename(args.abf_file) if args.abf_file else None,
         time_window=_build_time_window(start_time, end_time),
+        e_rev=e_rev,
+        i_rev=i_rev,
         output_dir=args.output_dir,
     )
     print(
@@ -156,6 +158,8 @@ def main():
     start_time = kwargs.get("start_time")
     end_time = kwargs.get("end_time")
     time_window = _build_time_window(start_time, end_time)
+    e_rev = int(kwargs.get("e_rev")) if kwargs.get("e_rev") is not None else 0
+    i_rev = int(kwargs.get("i_rev")) if kwargs.get("i_rev") is not None else -60
 
     if args.view_raw:
         _handle_view_raw(args, filename, sweep_number, start_time, end_time)
@@ -170,7 +174,7 @@ def main():
         _handle_extract_current_stats(args, sweep_number, time_window)
     
     if args.analyze_iv:
-        _handle_analyze_iv(args, start_time, end_time)
+        _handle_analyze_iv(args, start_time, end_time, e_rev, i_rev)
 
 
 if __name__ == "__main__":

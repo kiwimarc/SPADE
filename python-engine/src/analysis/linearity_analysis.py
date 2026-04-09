@@ -16,7 +16,7 @@ from src.plotting.iv_analysis_plots import (
 )
 from src.utils.time import seconds_to_milliseconds
 
-def analyze_iv_relationship(file_data, filename, time_window, output_dir):
+def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60, output_dir=None):
     """
     Analyzes I-V relationship: fits linear regression, computes R², detects outliers.
     
@@ -29,6 +29,8 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
             - membrane_channel_labels: labels for membrane channel
         filename: identifier for the file (for plotting)
         time_window: (start_ms, end_ms) tuple for time window
+        e_rev: reversal potential for excitatory synapses (mV)
+        i_rev: reversal potential for inhibitory synapses (mV)
         output_dir: directory to save plot
     
     Returns:
@@ -154,10 +156,8 @@ def analyze_iv_relationship(file_data, filename, time_window, output_dir):
     reversal_potentials = -intercepts / slopes
     reversal_potential = -plot_intercept / plot_slope
     
-    E_e = 0
-    E_i = -60
-
-    G_i = (slopes * (E_e - reversal_potentials)) / (E_e - E_i)    
+    print(e_rev, i_rev)
+    G_i = (slopes * (e_rev - reversal_potentials)) / (e_rev - i_rev)
     G_e = slopes - G_i
 
     plot_Gsyn_Ge_Gi_over_time(
