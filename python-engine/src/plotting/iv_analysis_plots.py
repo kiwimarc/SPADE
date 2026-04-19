@@ -128,7 +128,14 @@ def plot_iv_relationship(
 
     plt.figure(figsize=(8, 5))
     plt.grid(alpha=0.5, ls="--")
-    plt.plot(mean_voltages, mean_currents, ".-", ms=10, label="Data", color="blue")
+
+    # Warn if fit quality is low, and change the plot color to indicate potential issues with the fit
+    if r_squared < 0.95:
+        print(f"Warning: Low R² value ({r_squared:.4f}) for I-V fit in {filename}.")
+        plt.plot(mean_voltages, mean_currents, ".-", ms=10, label="Data", color="red")
+    else:
+        plt.plot(mean_voltages, mean_currents, ".-", ms=10, label="Data", color="blue")
+
     plt.plot(mean_voltages, mean_predicteds, "--", color="red", label=f"Fit (R² = {r_squared:.3f})")
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -201,8 +208,9 @@ def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_ax
     x_axis, x_label = _resolve_x_axis(EI_ratio, time_axis_ms)
 
     plt.figure(figsize=(10, 5))
-    plt.fill_between(x_axis, 0, EI_ratio, color="#ff0000")
-    plt.fill_between(x_axis, EI_ratio, 1, color="#0000ff")
+    plt.plot(x_axis, EI_ratio, ".-", ms=0.1, alpha=0.7)
+    #plt.fill_between(x_axis, 0, EI_ratio, color="#ff0000")
+    #plt.fill_between(x_axis, EI_ratio, 1, color="#0000ff")
     plt.ylim(0, 1)
     plt.xlabel(x_label)
     plt.ylabel("E/I Ratio")
@@ -213,11 +221,12 @@ def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_ax
     plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()
 
-def plot_e_fraction_over_time(E_fraction , filename, output_dir, time_window, time_axis_ms=None, export_format="png"):
-    """Plot the excitatory fraction trace over time and save the figure.
+def plot_e_and_i_fraction_over_time(E_fraction, I_fraction, filename, output_dir, time_window, time_axis_ms=None, export_format="png"):
+    """Plot the excitatory and inhibitory fraction traces over time and save the figure.
 
     Args:
         E_fraction: Excitatory fraction values.
+        I_fraction: Inhibitory fraction values.
         filename: Source filename used in figure title and output naming.
         output_dir: Directory where the output figure is written.
         time_window: Optional tuple used for output filename suffix.
@@ -231,13 +240,15 @@ def plot_e_fraction_over_time(E_fraction , filename, output_dir, time_window, ti
     x_axis, x_label = _resolve_x_axis(E_fraction, time_axis_ms)
 
     plt.figure(figsize=(10, 5))
-    plt.fill_between(x_axis, 0, E_fraction, color="#ff0000")
+    plt.fill_between(x_axis, 0, E_fraction, color="#ff0000", label="E Fraction")
+    plt.fill_between(x_axis, 0, I_fraction, color="#0000ff", label="I Fraction")
     plt.ylim(0, 1)
     plt.xlabel(x_label)
-    plt.ylabel("E Fraction")
-    plt.title(f"E Fraction Over Time - {filename}")
+    plt.ylabel("E & I Fraction")
+    plt.title(f"E and I Fractions Over Time - {filename}")
+    plt.legend()
 
-    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_E_fraction_over_time.{export_format}")
+    plot_filename = _safe_plot_filename(filename, f"{zoom_suffix}_E_and_I_fraction_over_time.{export_format}")
     plot_path = os.path.join(output_dir, plot_filename)
     plt.savefig(plot_path, dpi=150, bbox_inches="tight", format=export_format)
     plt.close()

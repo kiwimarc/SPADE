@@ -14,7 +14,7 @@ from src.plotting.iv_analysis_plots import (
     plot_slopes_over_time,
     plot_Gsyn_Ge_Gi_over_time,
     plot_ei_ratio_over_time,
-    plot_e_fraction_over_time,
+    plot_e_and_i_fraction_over_time,
 )
 from src.data_io.csv_writer import write_series_csv as _write_series_csv
 from src.utils.time import seconds_to_milliseconds
@@ -283,10 +283,11 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
         )
 
     Ge_fraction = G_e / slopes
+    Gi_fraction = G_i / slopes
     if export_csv:
         e_fraction_csv = os.path.join(
             output_dir,
-            _safe_output_name(filename, f"{zoom_suffix}_E_fraction_over_time.csv"),
+            _safe_output_name(filename, f"{zoom_suffix}_E_and_I_fraction_over_time.csv"),
         )
         _write_series_csv(
             e_fraction_csv,
@@ -294,8 +295,9 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
             zip(time_axis_ms, Ge_fraction),
         )
     else:
-        plot_e_fraction_over_time(
+        plot_e_and_i_fraction_over_time(
             Ge_fraction,
+            Gi_fraction,
             filename,
             output_dir,
             time_window,
