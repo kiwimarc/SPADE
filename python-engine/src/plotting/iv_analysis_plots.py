@@ -34,6 +34,20 @@ def plot_predicted_current_over_time(
     time_axis_ms=None,
     export_format="png"
 ):
+    """Plot predicted current over time and save the figure.
+
+    Args:
+        predicteds: Predicted current series.
+        filename: Source filename used in figure title and output naming.
+        output_dir: Directory where the output figure is written.
+        time_window: Optional tuple used for output filename suffix.
+        y_label: Label for the y-axis.
+        time_axis_ms: Optional time axis in milliseconds.
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+
+    Returns:
+        None: The figure is saved to disk and not returned.
+    """
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(predicteds, time_axis_ms)
 
@@ -51,6 +65,20 @@ def plot_predicted_current_over_time(
 
 
 def plot_slopes_over_time(slopes, filename, output_dir, time_window, y_label, time_axis_ms=None, export_format="png"):
+    """Plot slope values over time and save the figure.
+
+    Args:
+        slopes: Slope values over time.
+        filename: Source filename used in figure title and output naming.
+        output_dir: Directory where the output figure is written.
+        time_window: Optional tuple used for output filename suffix.
+        y_label: Unused compatibility argument kept for call-site stability.
+        time_axis_ms: Optional time axis in milliseconds.
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+
+    Returns:
+        None: The figure is saved to disk and not returned.
+    """
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(slopes, time_axis_ms)
 
@@ -79,6 +107,23 @@ def plot_iv_relationship(
     y_label,
     export_format="png"
 ):
+    """Plot mean I-V points with fitted predictions and save the figure.
+
+    Args:
+        mean_voltages: Mean membrane voltages used for x-axis values.
+        mean_currents: Mean measured currents used as observed y values.
+        mean_predicteds: Predicted currents from the fit.
+        r_squared: Goodness-of-fit metric used in title and legend.
+        filename: Source filename used in figure title and output naming.
+        output_dir: Directory where the output figure is written.
+        time_window: Optional tuple used for output filename suffix.
+        x_label: Label for the x-axis.
+        y_label: Label for the y-axis.
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+
+    Returns:
+        None: The figure is saved to disk and not returned.
+    """
     zoom_suffix = _zoom_suffix(time_window)
 
     plt.figure(figsize=(8, 5))
@@ -105,6 +150,21 @@ def plot_Gsyn_Ge_Gi_over_time(
     time_axis_ms=None,
     export_format="png"
 ):
+    """Plot conductance components over time and save the figure.
+
+    Args:
+        G_syn: Total synaptic conductance values.
+        G_e: Excitatory conductance values.
+        G_i: Inhibitory conductance values.
+        filename: Source filename used in figure title and output naming.
+        output_dir: Directory where the output figure is written.
+        time_window: Optional tuple used for output filename suffix.
+        time_axis_ms: Optional time axis in milliseconds.
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+
+    Returns:
+        None: The figure is saved to disk and not returned.
+    """
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(G_syn, time_axis_ms)
 
@@ -124,6 +184,19 @@ def plot_Gsyn_Ge_Gi_over_time(
     plt.close()
 
 def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_axis_ms=None, export_format="png"):
+    """Plot the E/I ratio trace over time and save the figure.
+
+    Args:
+        EI_ratio: Excitatory-to-inhibitory ratio values.
+        filename: Source filename used in figure title and output naming.
+        output_dir: Directory where the output figure is written.
+        time_window: Optional tuple used for output filename suffix.
+        time_axis_ms: Optional time axis in milliseconds.
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+
+    Returns:
+        None: The figure is saved to disk and not returned.
+    """
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(EI_ratio, time_axis_ms)
 
@@ -141,6 +214,19 @@ def plot_ei_ratio_over_time(EI_ratio, filename, output_dir, time_window, time_ax
     plt.close()
 
 def plot_e_fraction_over_time(E_fraction , filename, output_dir, time_window, time_axis_ms=None, export_format="png"):
+    """Plot the excitatory fraction trace over time and save the figure.
+
+    Args:
+        E_fraction: Excitatory fraction values.
+        filename: Source filename used in figure title and output naming.
+        output_dir: Directory where the output figure is written.
+        time_window: Optional tuple used for output filename suffix.
+        time_axis_ms: Optional time axis in milliseconds.
+        export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
+
+    Returns:
+        None: The figure is saved to disk and not returned.
+    """
     zoom_suffix = _zoom_suffix(time_window)
     x_axis, x_label = _resolve_x_axis(E_fraction, time_axis_ms)
 

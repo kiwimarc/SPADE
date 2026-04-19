@@ -3,8 +3,16 @@ import pyabf
 
 def load_abf(abf_file_path, channel=0):
     """
-    Loads an ABF file and extracts time, current matrix, and stimulus waveform.
-    channel: channel index to extract (default: 0)
+    Load an ABF file and extract sweep data for one channel.
+
+    Args:
+        abf_file_path: Path to the ABF file.
+        channel: Channel index to read.
+
+    Returns:
+        tuple: ``(time, sweep_matrix, channel_labels)`` where ``time`` is 1D,
+            ``sweep_matrix`` is ``(n_sweeps, n_points)``, and ``channel_labels``
+            is ``(x_label, y_label, c_label)``.
     """
     abf = pyabf.ABF(abf_file_path)
     time = abf.sweepX

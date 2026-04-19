@@ -1,6 +1,7 @@
 import os
 import matplotlib.pyplot as plt
-import csv
+
+from src.data_io.csv_writer import write_series_csv as _write_series_csv
 
 def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, sweep_number=None, start_time=None, end_time=None, export_format="png", export_csv=False):
     """
@@ -29,9 +30,6 @@ def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, s
     sweep_suffix = f"_raw_plot_sweep_{sweep_number}" if sweep_number is not None else "_raw_plot"
     zoom_suffix = f"_t{start_time}-{end_time}" if start_time is not None and end_time is not None else ""
 
-    # ---------------------------------------------------------
-    # CSV EXPORT LOGIC
-    # ---------------------------------------------------------
     if export_csv:
         csv_filename = filename.replace('.abf', f'{sweep_suffix}{zoom_suffix}_channel_{channel}.csv')
         csv_path = os.path.join(output_dir, csv_filename)
@@ -46,20 +44,11 @@ def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, s
             out_time = time
             out_sweeps = [sweepY[sweep] for sweep in sweeps_to_plot]
 
-        with open(csv_path, mode='w', newline='') as f:
-            writer = csv.writer(f)
-            header = ['Time'] + [f'Sweep_{sweep}' for sweep in sweeps_to_plot]
-            writer.writerow(header)
-            
-            for i in range(len(out_time)):
-                row = [out_time[i]] + [sw[i] for sw in out_sweeps]
-                writer.writerow(row)
+        header = ['Time'] + [f'Sweep_{sweep}' for sweep in sweeps_to_plot]
+        _write_series_csv(csv_path, header, zip(out_time, *out_sweeps))
                 
         return csv_path
 
-    # ---------------------------------------------------------
-    # PLOTTING LOGIC
-    # ---------------------------------------------------------
     # Set up the plot
     fig, ax1 = plt.subplots(figsize=(10, 6))
     

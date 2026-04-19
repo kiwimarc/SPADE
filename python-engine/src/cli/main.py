@@ -32,6 +32,20 @@ def _sweep_index(sweep_number):
 
 
 def _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time, export_format="png"):
+    """Handle raw trace.
+
+    Args:
+        args: Parsed CLI namespace.
+        filename: Source filename used for output naming.
+        channel: Channel index to load and plot.
+        sweep_number: Optional single sweep index.
+        start_time: Optional start time in seconds.
+        end_time: Optional end time in seconds.
+        export_format: Plot export format.
+
+    Returns:
+        None: Output path is printed to stdout.
+    """
     time, sweep_y, channel_labels = load_abf(args.abf_file, channel=channel)
     output_path = plot_raw_data(
         time,
@@ -53,6 +67,17 @@ def _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time
 
 
 def _handle_extract_peak_current(args, channel, sweep_number, time_window):
+    """Handle peak-current extraction.
+
+    Args:
+        args: Parsed CLI namespace.
+        channel: Channel index to load.
+        sweep_number: Optional single sweep index.
+        time_window: Time-window tuple in seconds.
+
+    Returns:
+        None: Results are printed to stdout.
+    """
     time, sweep_y, _ = load_abf(args.abf_file, channel=channel)
     peak_results = extract_peak_current(
         sweep_y,
@@ -68,6 +93,17 @@ def _handle_extract_peak_current(args, channel, sweep_number, time_window):
 
 
 def _handle_extract_integrated_current(args, channel, sweep_number, time_window):
+    """Handle integrated-current extraction.
+
+    Args:
+        args: Parsed CLI namespace.
+        channel: Channel index to load.
+        sweep_number: Optional single sweep index.
+        time_window: Time-window tuple in seconds.
+
+    Returns:
+        None: Results are printed to stdout.
+    """
     time, sweep_y, _ = load_abf(args.abf_file, channel=channel)
     integrated_results = extract_integrated_current(
         sweep_y,
@@ -80,6 +116,17 @@ def _handle_extract_integrated_current(args, channel, sweep_number, time_window)
 
 
 def _handle_extract_current_stats(args, channel, sweep_number, time_window):
+    """Handle current-statistics extraction.
+
+    Args:
+        args: Parsed CLI namespace.
+        channel: Channel index to load.
+        sweep_number: Optional single sweep index.
+        time_window: Time-window tuple in seconds.
+
+    Returns:
+        None: Results are printed to stdout.
+    """
     time, sweep_y, _ = load_abf(args.abf_file, channel=channel)
     stats_results = extract_current_stats(
         sweep_y,
@@ -97,6 +144,15 @@ def _handle_extract_current_stats(args, channel, sweep_number, time_window):
 
 
 def _collect_iv_file_data(abf_file_pattern, channels=[0, 1, 2]):
+    """Load all ABF files matching a pattern for I-V analysis.
+
+    Args:
+        abf_file_pattern: Glob pattern for ABF files.
+        channels: Channel indices for clamp, membrane, and stimulus.
+
+    Returns:
+        dict: File-keyed dictionary containing arrays and channel labels.
+    """
     abf_files = sorted(glob(abf_file_pattern, recursive=True))
     print(f"Found {len(abf_files)} ABF files for I-V analysis.", flush=True)
 
@@ -121,6 +177,22 @@ def _collect_iv_file_data(abf_file_pattern, channels=[0, 1, 2]):
 
 
 def _handle_analyze_iv(args, clamp_channel, membrane_channel, stimuli_channel, start_time, end_time, e_rev=0, i_rev=-60, export_format="png"):
+    """Handle full I-V analysis.
+
+    Args:
+        args: Parsed CLI namespace.
+        clamp_channel: Clamp channel index.
+        membrane_channel: Membrane channel index.
+        stimuli_channel: Stimulus channel index.
+        start_time: Optional analysis start time in seconds.
+        end_time: Optional analysis end time in seconds.
+        e_rev: Excitatory reversal potential in mV.
+        i_rev: Inhibitory reversal potential in mV.
+        export_format: Plot export format.
+
+    Returns:
+        None: Analysis summary is printed to stdout.
+    """
     file_data = _collect_iv_file_data(args.abf_file, channels=[clamp_channel, membrane_channel, stimuli_channel])
     iv_results = analyze_iv_relationship(
         file_data,

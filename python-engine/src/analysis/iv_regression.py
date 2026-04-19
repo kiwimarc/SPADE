@@ -16,13 +16,11 @@ class RegressionSeries:
 
 
 def _linregress(x: np.ndarray, y: np.ndarray):
-    """Load scipy lazily to avoid static import resolution issues in some editors."""
     scipy_stats = importlib.import_module("scipy.stats")
     return scipy_stats.linregress(x, y)
 
 
 def get_window_indices(time_values, time_window):
-    """Return indices that match a given time window, or all indices if no window is set."""
     if time_window is None:
         return np.arange(len(time_values))
 
@@ -32,11 +30,6 @@ def get_window_indices(time_values, time_window):
 
 
 def run_regression_over_time(voltages: np.ndarray, currents: np.ndarray) -> RegressionSeries:
-    """
-    Run a linear regression for each time index across files/sweeps.
-
-    Expects both arrays to be shaped as (n_series, n_timepoints).
-    """
     slopes = []
     intercepts = []
     r_squareds = []
@@ -73,7 +66,6 @@ def run_regression_over_time(voltages: np.ndarray, currents: np.ndarray) -> Regr
 
 
 def average_regression(series: RegressionSeries) -> dict:
-    """Compute scalar summary metrics from a RegressionSeries."""
     return {
         "slope": float(np.average(series.slopes)),
         "intercept": float(np.average(series.intercepts)),
@@ -88,7 +80,6 @@ def estimate_leak_current(
     voltages: np.ndarray,
     window_end: Optional[int],
 ) -> tuple[float, float, float, float, float, list[np.ndarray]]:
-    """Estimate leak current regression from pre-stimulus samples."""
     if window_end is None or window_end <= 0:
         window_end = currents.shape[1]
 

@@ -25,9 +25,36 @@ def _zoom_suffix(time_window):
         return ""
     return f"_t{time_window[0]}-{time_window[1]}"
 
-
 def _safe_output_name(filename, suffix):
     return filename.replace(".abf", suffix).replace("*", "%")
+
+def find_leak_current(currents, voltages, window_end):
+    return estimate_leak_current(currents, voltages, window_end)
+
+def find_stim_pulse(signal, min_slope=None):
+    y = np.asarray(signal, dtype=float)
+    if y.size < 3:
+        return None
+
+    # Remove baseline offset for more stable edge detection.
+    y = y - np.median(y[: max(5, len(y)//20)])
+
+    dy = np.diff(y)
+
+    rise_idx = int(np.argmax(dy))
+
+    if min_slope is not None and dy[rise_idx] < min_slope:
+        return None
+
+    peak = y[rise_idx+1:].max()
+    level = 0.5 * peak
+    above = np.where(y >= level)[0]
+    if len(above) == 0:
+        return rise_idx, None
+
+    start = above[0]
+    end = above[-1]
+    return rise_idx, start, end
 
 def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60, output_dir=None, export_format="png", export_csv=False):
     """
@@ -283,33 +310,3 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
         'p_value': plot_p_value,
         'x-intercept': reversal_potential,
     }
-
-def find_leak_current(currents, voltages, window_end):
-    """Backward-compatible wrapper around leak regression helper."""
-    return estimate_leak_current(currents, voltages, window_end)
-
-def find_stim_pulse(signal, min_slope=None):
-    """Return stimulus pulse indices as (rise_idx, start_idx, end_idx)."""
-    y = np.asarray(signal, dtype=float)
-    if y.size < 3:
-        return None
-
-    # Remove baseline offset for more stable edge detection.
-    y = y - np.median(y[: max(5, len(y)//20)])
-
-    dy = np.diff(y)
-
-    rise_idx = int(np.argmax(dy))
-
-    if min_slope is not None and dy[rise_idx] < min_slope:
-        return None
-
-    peak = y[rise_idx+1:].max()
-    level = 0.5 * peak
-    above = np.where(y >= level)[0]
-    if len(above) == 0:
-        return rise_idx, None
-
-    start = above[0]
-    end = above[-1]
-    return rise_idx, start, end

@@ -2,7 +2,6 @@ import numpy as np
 
 
 def compute_duration_ms(sweep_points: int, sample_rate_hz: float) -> float:
-    """Convert number of samples and sample rate (Hz) to duration in milliseconds."""
     return (float(sweep_points) / float(sample_rate_hz)) * 1000.0
 
 
@@ -12,11 +11,7 @@ def build_time_axis_ms(
     data_points_per_ms: float | None = None,
     start_ms: float = 0.0,
 ) -> np.ndarray:
-    """
-    Build a time axis in milliseconds.
 
-    Provide either sample_rate_hz or data_points_per_ms.
-    """
     if n_points < 0:
         raise ValueError("n_points must be non-negative")
 
@@ -30,5 +25,4 @@ def build_time_axis_ms(
 
 
 def seconds_to_milliseconds(values) -> np.ndarray:
-    """Convert scalar/array time values from seconds to milliseconds."""
     return np.asarray(values, dtype=float) * 1000.0
