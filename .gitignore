@@ -42,6 +42,7 @@ env/
 .metadata
 build/
 .packages
+spade/assets/python_dist.zip
 
 # Project specific
 __pypackages__/
