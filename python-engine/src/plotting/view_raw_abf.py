@@ -3,7 +3,20 @@ import matplotlib.pyplot as plt
 
 from src.data_io.csv_writer import write_series_csv as _write_series_csv
 
-def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, sweep_number=None, start_time=None, end_time=None, export_format="png", export_csv=False):
+def plot_raw_data(
+    time,
+    sweepY,
+    filename,
+    output_dir,
+    channel,
+    channel_labels,
+    sweep_number=None,
+    selected_sweeps=None,
+    start_time=None,
+    end_time=None,
+    export_format="png",
+    export_csv=False,
+):
     """
     Plots raw electrophysiology recordings from ABF files.
     
@@ -14,7 +27,8 @@ def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, s
         output_dir: Directory to save the plot image
         channel: Channel number being plotted
         channel_labels: Labels for channels
-        sweep_number: Optional specific sweep to plot; if None, plots all sweeps
+        sweep_number: Optional specific sweep to plot; if None, plots all sweeps or selected_sweeps
+        selected_sweeps: Optional list of sweep indices to plot instead of all sweeps
         start_time: Optional start time for zooming (seconds)
         end_time: Optional end time for zooming (seconds)
         export_format: Format for exporting the plot (supported formats: eps, jpeg, jpg, pdf, pgf, png, ps, raw, rgba, svg, svgz, tif, tiff, webp)
@@ -23,7 +37,12 @@ def plot_raw_data(time, sweepY, filename, output_dir, channel, channel_labels, s
         str: File path to the saved plot image or CSV file
     """
     # Determine which sweeps to process
-    sweeps_to_plot = [int(sweep_number)] if sweep_number is not None else range(len(sweepY))
+    if selected_sweeps is not None:
+        sweeps_to_plot = [int(sweep) for sweep in selected_sweeps]
+    elif sweep_number is not None:
+        sweeps_to_plot = [int(sweep_number)]
+    else:
+        sweeps_to_plot = range(len(sweepY))
     
     # Prepare output directory and common filename suffixes
     os.makedirs(output_dir, exist_ok=True)

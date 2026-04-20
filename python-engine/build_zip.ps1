@@ -41,10 +41,22 @@
     }
 
     # Copy project code (new src layout)
-    foreach ($module in @("analysis", "data_io", "plotting", "cli")) {
+    Write-Host "[INFO] Copying project source..."
+    
+    # Create the 'src' directory inside the portable python folder
+    $TargetSrc = "$WorkDir/python/src"
+    if (-not (Test-Path $TargetSrc)) {
+        New-Item -ItemType Directory -Path $TargetSrc | Out-Null
+    }
+
+    # Add an __init__.py so Python treats 'src' as a package
+    New-Item -ItemType File -Path "$TargetSrc/__init__.py" -Force | Out-Null
+
+    # Copy modules INTO the new 'src' directory
+    foreach ($module in @("analysis", "data_io", "plotting", "cli", "utils")) {
         $modulePath = "src/$module"
         if (Test-Path $modulePath) {
-            Copy-Item $modulePath "$WorkDir/python/" -Recurse
+            Copy-Item $modulePath "$TargetSrc/" -Recurse
         }
     }
 

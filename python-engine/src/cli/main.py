@@ -27,11 +27,23 @@ def _build_time_window(start_time, end_time):
     return float(start_time), float(end_time)
 
 
+def _selected_sweeps_list(selected_sweeps):
+    if not selected_sweeps:
+        return None
+
+    values = []
+    for item in str(selected_sweeps).split(','):
+        token = item.strip()
+        if token:
+            values.append(int(token))
+    return values if values else None
+
+
 def _sweep_index(sweep_number):
     return int(sweep_number) if sweep_number is not None else None
 
 
-def _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time, export_format="png"):
+def _handle_view_raw(args, filename, channel, sweep_number, selected_sweeps, start_time, end_time, export_format="png"):
     """Handle raw trace.
 
     Args:
@@ -53,6 +65,7 @@ def _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time
         filename=filename,
         output_dir=args.output_dir,
         sweep_number=sweep_number,
+        selected_sweeps=selected_sweeps,
         start_time=start_time,
         end_time=end_time,
         channel=channel,
@@ -235,6 +248,7 @@ def main():
 
     filename = os.path.basename(args.abf_file) if args.abf_file else None
     sweep_number = kwargs.get("sweep_number")
+    selected_sweeps = _selected_sweeps_list(kwargs.get("selected_sweeps"))
     start_time = kwargs.get("start_time")
     end_time = kwargs.get("end_time")
     time_window = _build_time_window(start_time, end_time)
@@ -247,7 +261,7 @@ def main():
     channel = int(kwargs.get("channel", 0))
 
     if args.view_raw:
-        _handle_view_raw(args, filename, channel, sweep_number, start_time, end_time, export_format)
+        _handle_view_raw(args, filename, channel, sweep_number, selected_sweeps, start_time, end_time, export_format)
 
     if args.extract_peak_current:
         _handle_extract_peak_current(args, channel, sweep_number, time_window)
