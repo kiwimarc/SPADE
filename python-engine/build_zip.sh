@@ -51,9 +51,18 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # Copy project code (new src layout)
-for module in analysis data_io plotting cli; do
+
+# Create the 'src' directory inside the portable python folder
+TARGET_SRC="$WORK_DIR/python/src"
+mkdir -p "$TARGET_SRC"
+
+# Add an __init__.py so Python treats 'src' as a package
+touch "$TARGET_SRC/__init__.py"
+
+# Copy modules INTO the new 'src' directory
+for module in analysis data_io plotting cli utils; do
     if [ -d "src/$module" ]; then
-        cp -r "src/$module" "$WORK_DIR/python/"
+        cp -r "src/$module" "$TARGET_SRC/"
     fi
 done
 

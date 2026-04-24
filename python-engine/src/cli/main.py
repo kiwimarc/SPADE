@@ -166,6 +166,9 @@ def _collect_iv_file_data(abf_file_pattern, channels=[0, 1, 2]):
     Returns:
         dict: File-keyed dictionary containing arrays and channel labels.
     """
+    # Strip literal quotes if they exist and fix Windows backslash escapes
+    abf_file_pattern = abf_file_pattern.strip('"').replace('\\', '/')
+    
     abf_files = sorted(glob(abf_file_pattern, recursive=True))
     print(f"Found {len(abf_files)} ABF files for I-V analysis.", flush=True)
 

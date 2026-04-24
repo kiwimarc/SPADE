@@ -11,7 +11,7 @@ def _zoom_suffix(time_window):
 
 
 def _safe_plot_filename(filename, suffix):
-    return filename.replace(".abf", suffix).replace("*", "%")
+    return filename.replace('"', '').replace(".abf", suffix).replace("*", "%")
 
 
 def _resolve_x_axis(values, time_axis_ms):

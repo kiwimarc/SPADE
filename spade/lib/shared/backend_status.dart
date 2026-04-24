@@ -1,0 +1,1 @@
+enum BackendStatus { ready, error, computing, initializing }

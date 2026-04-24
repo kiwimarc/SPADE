@@ -26,7 +26,7 @@ def _zoom_suffix(time_window):
     return f"_t{time_window[0]}-{time_window[1]}"
 
 def _safe_output_name(filename, suffix):
-    return filename.replace(".abf", suffix).replace("*", "%")
+    return filename.replace('"', '').replace(".abf", suffix).replace("*", "%")
 
 def find_leak_current(currents, voltages, window_end):
     return estimate_leak_current(currents, voltages, window_end)
@@ -149,6 +149,7 @@ def analyze_iv_relationship(file_data, filename, time_window, e_rev=0, i_rev=-60
 
     zoom_suffix = _zoom_suffix(time_window)
     output_dir = output_dir or "."
+    output_dir = output_dir.replace('"', '').replace("'", "")
     os.makedirs(output_dir, exist_ok=True)
 
     if export_csv:
