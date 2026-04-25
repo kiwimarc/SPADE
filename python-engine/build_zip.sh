@@ -34,6 +34,10 @@ mkdir -p "$WORK_DIR/python"
 unzip -q "$WORK_DIR/python.zip" -d "$WORK_DIR/python"
 rm "$WORK_DIR/python.zip"
 
+# Fetch Python License
+echo -e "${CYAN}[INFO] Fetching Python License...${NC}"
+curl -sSL "https://raw.githubusercontent.com/python/cpython/main/LICENSE" -o "$WORK_DIR/python/LICENSE.txt"
+
 # Enable Pip (Uncomment 'import site' in python._pth)
 PTH_FILE=$(ls "$WORK_DIR"/python/python*._pth | head -n 1)
 if [ -n "$PTH_FILE" ]; then

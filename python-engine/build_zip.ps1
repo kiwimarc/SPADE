@@ -26,6 +26,11 @@
     Expand-Archive -Path "$WorkDir/python.zip" -DestinationPath "$WorkDir/python"
     Remove-Item "$WorkDir/python.zip"
 
+    # Fetch Python License
+    Write-Host "[INFO] Fetching Python License..." -ForegroundColor Cyan
+    $LicenseUrl = "https://raw.githubusercontent.com/python/cpython/main/LICENSE"
+    Invoke-WebRequest -Uri $LicenseUrl -OutFile "$WorkDir/python/LICENSE.txt"
+
     # Enable Pip (Uncomment 'import site' in python._pth)
     $PthFile = Get-ChildItem "$WorkDir/python/python*._pth" | Select-Object -First 1
     (Get-Content $PthFile.FullName) -replace "#import site", "import site" | Set-Content $PthFile.FullName
