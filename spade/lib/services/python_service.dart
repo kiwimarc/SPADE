@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
@@ -22,11 +21,11 @@ class _PythonCommandResult {
 
 class PythonService {
   String? _executablePath;
+  String? _pythonDirPath;
 
   Future<void> init() async {
     final appDir = await getApplicationSupportDirectory();
     final pythonDir = Directory(path.join(appDir.path, 'python_dist'));
-    _executablePath = path.join(pythonDir.path, 'python.exe');
     final checksumFile = File(path.join(pythonDir.path, '.dist_checksum'));
 
     final data = await rootBundle.load('assets/python_dist.zip');
@@ -35,39 +34,109 @@ class PythonService {
 
     print('Checking for Python distribution at: ${pythonDir.path}');
 
+    bool needsExtraction = true;
+
     if (await pythonDir.exists()) {
       if (await checksumFile.exists()) {
         final existingChecksum = (await checksumFile.readAsString()).trim();
         if (existingChecksum == currentChecksum) {
           print('Python distribution checksum verified.');
-          return;
+          needsExtraction = false;
+        } else {
+          print('Python distribution checksum mismatch. Re-extracting...');
         }
-        print('Python distribution checksum mismatch. Re-extracting...');
       } else {
         print('Python distribution checksum missing. Re-extracting...');
       }
 
-      await pythonDir.delete(recursive: true);
-    }
-
-    print('Extracting Python distribution...');
-    final archive = ZipDecoder().decodeBytes(bytes);
-
-    for (final file in archive) {
-      final filename = path.join(pythonDir.path, file.name);
-      if (file.isFile) {
-        final outFile = File(filename);
-        await outFile.create(recursive: true);
-        await outFile.writeAsBytes(file.content as List<int>);
-      } else {
-        await Directory(filename).create(recursive: true);
+      if (needsExtraction) {
+        await pythonDir.delete(recursive: true);
       }
     }
 
-    await checksumFile.create(recursive: true);
-    await checksumFile.writeAsString(currentChecksum);
+    if (needsExtraction) {
+      print('Extracting Python distribution via Native OS tools...');
+      await pythonDir.create(recursive: true);
 
-    print('Python extracted to: $_executablePath');
+      final tempZipPath = path.join(appDir.path, 'temp_python_dist.zip');
+      final tempZipFile = File(tempZipPath);
+      await tempZipFile.writeAsBytes(bytes);
+
+      ProcessResult result;
+      if (Platform.isWindows) {
+        // Modern Windows 10/11 has 'tar' built-in which supports zip extraction
+        result = await Process.run('tar', [
+          '-xf',
+          tempZipPath,
+          '-C',
+          pythonDir.path,
+        ]);
+
+        // Failsafe for older Windows using PowerShell
+        if (result.exitCode != 0) {
+          result = await Process.run('powershell', [
+            '-command',
+            'Expand-Archive -Path "$tempZipPath" -DestinationPath "${pythonDir.path}" -Force',
+          ]);
+        }
+      } else {
+        // Linux and macOS native unzip
+        result = await Process.run('unzip', [
+          '-q',
+          tempZipPath,
+          '-d',
+          pythonDir.path,
+        ]);
+      }
+
+      if (await tempZipFile.exists()) {
+        await tempZipFile.delete();
+      }
+
+      if (result.exitCode != 0) {
+        throw Exception('Native OS extraction failed:\n${result.stderr}');
+      }
+
+      await checksumFile.create(recursive: true);
+      await checksumFile.writeAsString(currentChecksum);
+      print('Python distribution extracted successfully.');
+    }
+
+    _pythonDirPath = pythonDir.path;
+
+    // Dynamically locate the Python executable based on OS and common portable structures
+    final executableCandidates = Platform.isWindows
+        ? [
+            path.join(pythonDir.path, 'python.exe'),
+            path.join(pythonDir.path, 'Scripts', 'python.exe'),
+            path.join(pythonDir.path, 'bin', 'python.exe'),
+          ]
+        : [
+            path.join(pythonDir.path, 'bin', 'python3'),
+            path.join(pythonDir.path, 'bin', 'python'),
+            path.join(pythonDir.path, 'python3'),
+            path.join(pythonDir.path, 'python'),
+          ];
+
+    for (final candidate in executableCandidates) {
+      if (await File(candidate).exists()) {
+        _executablePath = candidate;
+        break;
+      }
+    }
+
+    if (_executablePath == null) {
+      throw Exception(
+        'Could not find a Python executable in ${pythonDir.path}',
+      );
+    }
+
+    // Failsafe executable permission check (just for the main executable)
+    if (!Platform.isWindows) {
+      await Process.run('chmod', ['+x', _executablePath!]);
+    }
+
+    print('Python executable resolved to: $_executablePath');
   }
 
   Future<Map<String, dynamic>> loadConfigFromFile(
@@ -96,14 +165,13 @@ class PythonService {
   }
 
   Future<String> extractAbfInfo(String abfFilePath) async {
-    if (_executablePath == null) {
+    if (_executablePath == null || _pythonDirPath == null) {
       await init();
     }
 
-    final pythonDir = File(_executablePath!).parent.path;
     final scriptCandidates = <String>[
-      path.join(pythonDir, 'extract_info.py'),
-      path.join(pythonDir, 'cli', 'extract_info.py'),
+      path.join(_pythonDirPath!, 'extract_info.py'),
+      path.join(_pythonDirPath!, 'cli', 'extract_info.py'),
     ];
 
     final scriptPath = scriptCandidates.firstWhere(
@@ -111,14 +179,17 @@ class PythonService {
       orElse: () => scriptCandidates.first,
     );
 
-    final process = await Process.start(
-      _executablePath!,
-      [scriptPath, abfFilePath],
-      workingDirectory: pythonDir,
-    );
+    final process = await Process.start(_executablePath!, [
+      scriptPath,
+      abfFilePath,
+    ], workingDirectory: _pythonDirPath!);
 
-    final stdoutText = await process.stdout.transform(const Utf8Decoder(allowMalformed: true)).join();
-    final stderrText = await process.stderr.transform(const Utf8Decoder(allowMalformed: true)).join();
+    final stdoutText = await process.stdout
+        .transform(const Utf8Decoder(allowMalformed: true))
+        .join();
+    final stderrText = await process.stderr
+        .transform(const Utf8Decoder(allowMalformed: true))
+        .join();
     final exitCode = await process.exitCode;
 
     if (exitCode != 0) {
@@ -147,7 +218,9 @@ class PythonService {
     final regex = RegExp(r'Raw CSV saved at:\s*(.+)');
     final match = regex.firstMatch(stdoutText);
     if (match == null) {
-      throw Exception('Could not determine preview CSV path from Python output.');
+      throw Exception(
+        'Could not determine preview CSV path from Python output.',
+      );
     }
 
     final csvPath = match.group(1)?.trim();
@@ -213,11 +286,11 @@ class PythonService {
     required Map<String, dynamic> config,
     Map<String, dynamic> overrides = const {},
   }) async {
-    final mergedConfig = {
-      ...config,
-      ...overrides,
-    };
-    final result = await _runMainCommand(config: mergedConfig, streamLogs: true);
+    final mergedConfig = {...config, ...overrides};
+    final result = await _runMainCommand(
+      config: mergedConfig,
+      streamLogs: true,
+    );
     if (result.exitCode != 0) {
       throw Exception(
         'Python failed with exit code ${result.exitCode}: ${result.stderrText.trim()}',
@@ -367,7 +440,7 @@ class PythonService {
     required Map<String, dynamic> config,
     bool streamLogs = false,
   }) async {
-    if (_executablePath == null) {
+    if (_executablePath == null || _pythonDirPath == null) {
       await init();
     }
 
@@ -377,7 +450,7 @@ class PythonService {
     final process = await Process.start(
       _executablePath!,
       args,
-      workingDirectory: File(_executablePath!).parent.path,
+      workingDirectory: _pythonDirPath!,
     );
 
     final stdoutBuffer = StringBuffer();
@@ -389,28 +462,22 @@ class PythonService {
     process.stdout
         .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen(
-          (line) {
-            stdoutBuffer.writeln(line);
-            if (streamLogs) {
-              print('[python] $line');
-            }
-          },
-          onDone: () => stdoutDone.complete(),
-        );
+        .listen((line) {
+          stdoutBuffer.writeln(line);
+          if (streamLogs) {
+            print('[python] $line');
+          }
+        }, onDone: () => stdoutDone.complete());
 
     process.stderr
         .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())
-        .listen(
-          (line) {
-            stderrBuffer.writeln(line);
-            if (streamLogs) {
-              print('[python][stderr] $line');
-            }
-          },
-          onDone: () => stderrDone.complete(),
-        );
+        .listen((line) {
+          stderrBuffer.writeln(line);
+          if (streamLogs) {
+            print('[python][stderr] $line');
+          }
+        }, onDone: () => stderrDone.complete());
 
     final exitCode = await process.exitCode;
     await Future.wait([stdoutDone.future, stderrDone.future]);
@@ -423,8 +490,7 @@ class PythonService {
   }
 
   List<String> _buildMainScriptArguments(Map<String, dynamic> config) {
-    final pythonDir = File(_executablePath!).parent.path;
-    final scriptPath = path.join(pythonDir, 'main.py');
+    final scriptPath = path.join(_pythonDirPath!, 'main.py');
     return <String>[scriptPath, ..._buildArguments(config)];
   }
 
