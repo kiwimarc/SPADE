@@ -38,12 +38,11 @@ Instead of relying on a system-wide Python installation or cloud APIs, SPADE run
 1. Get the Flutter dependencies:
    ```bash
    flutter pub get
-  ```
 
 2. Run the application in debug mode:
    ```bash
    flutter run
-  ```
+   
 ### Building for Release
 
 **Windows:**
