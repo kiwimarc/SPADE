@@ -23,6 +23,11 @@ class PythonService {
   String? _executablePath;
   String? _pythonDirPath;
 
+  /// Initializes the Python environment.
+  ///
+  /// This method checks if the bundled Python distribution (zip) is already extracted.
+  /// It uses SHA256 checksums to determine if the local extraction is up-to-date.
+  /// If missing or outdated, it extracts the zip using native OS utilities to ensure speed.
   Future<void> init() async {
     final appDir = await getApplicationSupportDirectory();
     final pythonDir = Directory(path.join(appDir.path, 'python_dist'));
@@ -164,100 +169,6 @@ class PythonService {
     );
   }
 
-  Future<String> extractAbfInfo(String abfFilePath) async {
-    if (_executablePath == null || _pythonDirPath == null) {
-      await init();
-    }
-
-    final scriptCandidates = <String>[
-      path.join(_pythonDirPath!, 'extract_info.py'),
-      path.join(_pythonDirPath!, 'cli', 'extract_info.py'),
-    ];
-
-    final scriptPath = scriptCandidates.firstWhere(
-      (candidate) => File(candidate).existsSync(),
-      orElse: () => scriptCandidates.first,
-    );
-
-    final process = await Process.start(_executablePath!, [
-      scriptPath,
-      abfFilePath,
-    ], workingDirectory: _pythonDirPath!);
-
-    final stdoutText = await process.stdout
-        .transform(const Utf8Decoder(allowMalformed: true))
-        .join();
-    final stderrText = await process.stderr
-        .transform(const Utf8Decoder(allowMalformed: true))
-        .join();
-    final exitCode = await process.exitCode;
-
-    if (exitCode != 0) {
-      throw Exception(
-        'extract_info.py failed with exit code $exitCode: ${stderrText.trim()}',
-      );
-    }
-
-    return stdoutText.trim();
-  }
-
-  Future<String> generateRawPreviewCsv({
-    required String abfFilePath,
-    required String outputDir,
-    required int channel,
-    int? sweepNumber,
-  }) async {
-    final stdoutText = await runViewRawCommand(
-      abfFilePath: abfFilePath,
-      outputDir: outputDir,
-      channel: channel,
-      sweepNumber: sweepNumber,
-      exportCsv: true,
-    );
-
-    final regex = RegExp(r'Raw CSV saved at:\s*(.+)');
-    final match = regex.firstMatch(stdoutText);
-    if (match == null) {
-      throw Exception(
-        'Could not determine preview CSV path from Python output.',
-      );
-    }
-
-    final csvPath = match.group(1)?.trim();
-    if (csvPath == null || csvPath.isEmpty) {
-      throw Exception('Python reported an empty preview CSV path.');
-    }
-
-    return csvPath;
-  }
-
-  Future<String> generateRawPreviewPlot({
-    required String abfFilePath,
-    required String outputDir,
-    required int channel,
-    List<int>? selectedSweeps,
-  }) async {
-    final stdoutText = await runViewRawCommand(
-      abfFilePath: abfFilePath,
-      outputDir: outputDir,
-      channel: channel,
-      selectedSweeps: selectedSweeps,
-    );
-
-    final regex = RegExp(r'Raw plot saved at:\s*(.+)');
-    final match = regex.firstMatch(stdoutText);
-    if (match == null) {
-      throw Exception('Could not determine raw plot path from Python output.');
-    }
-
-    final plotPath = match.group(1)?.trim();
-    if (plotPath == null || plotPath.isEmpty) {
-      throw Exception('Python reported an empty raw plot path.');
-    }
-
-    return plotPath;
-  }
-
   Future<String> createDefaultConfigFile(String outputPath) async {
     const defaultConfig = {
       'channel': 0,
@@ -328,98 +239,6 @@ class PythonService {
         'export_format': exportFormat,
       },
       errorPrefix: 'Raw command',
-    );
-  }
-
-  Future<String> runExtractPeakCurrentCommand({
-    required String abfFilePath,
-    int channel = 0,
-    int? sweepNumber,
-    double? startTime,
-    double? endTime,
-  }) async {
-    return _runMainCommandWithOutput(
-      config: {
-        'extract_peak_current': true,
-        'abf_file': abfFilePath,
-        'channel': channel,
-        'sweep_number': sweepNumber,
-        'start_time': startTime,
-        'end_time': endTime,
-      },
-      errorPrefix: 'Peak current extraction',
-    );
-  }
-
-  Future<String> runExtractIntegratedCurrentCommand({
-    required String abfFilePath,
-    int channel = 0,
-    int? sweepNumber,
-    double? startTime,
-    double? endTime,
-  }) async {
-    return _runMainCommandWithOutput(
-      config: {
-        'extract_integrated_current': true,
-        'abf_file': abfFilePath,
-        'channel': channel,
-        'sweep_number': sweepNumber,
-        'start_time': startTime,
-        'end_time': endTime,
-      },
-      errorPrefix: 'Integrated current extraction',
-    );
-  }
-
-  Future<String> runExtractCurrentStatsCommand({
-    required String abfFilePath,
-    int channel = 0,
-    int? sweepNumber,
-    double? startTime,
-    double? endTime,
-  }) async {
-    return _runMainCommandWithOutput(
-      config: {
-        'extract_current_stats': true,
-        'abf_file': abfFilePath,
-        'channel': channel,
-        'sweep_number': sweepNumber,
-        'start_time': startTime,
-        'end_time': endTime,
-      },
-      errorPrefix: 'Current stats extraction',
-    );
-  }
-
-  Future<String> runAnalyzeIvCommand({
-    required String abfFilePattern,
-    required String outputDir,
-    int clampChannel = 0,
-    int membraneChannel = 1,
-    int stimuliChannel = 2,
-    double? startTime,
-    double? endTime,
-    int eRev = 0,
-    int iRev = -60,
-    bool exportCsv = false,
-    String? exportFormat,
-  }) async {
-    return _runMainCommandWithOutput(
-      config: {
-        'analyze_iv': true,
-        'export_csv': exportCsv,
-        'abf_file': abfFilePattern,
-        'output_dir': outputDir,
-        'clamp_channel': clampChannel,
-        'membrane_channel': membraneChannel,
-        'stimuli_channel': stimuliChannel,
-        'start_time': startTime,
-        'end_time': endTime,
-        'e_rev': eRev,
-        'i_rev': iRev,
-        'export_format': exportFormat,
-      },
-      errorPrefix: 'I-V analysis',
     );
   }
 
@@ -548,5 +367,193 @@ class PythonService {
       return value.isEmpty;
     }
     return false;
+  }
+
+  // --- Wrapper Methods for Python CLI Commands ---
+
+  Future<String> extractAbfInfo(String abfFilePath) async {
+    if (_executablePath == null || _pythonDirPath == null) {
+      await init();
+    }
+
+    final scriptCandidates = <String>[
+      path.join(_pythonDirPath!, 'extract_info.py'),
+      path.join(_pythonDirPath!, 'cli', 'extract_info.py'),
+    ];
+
+    final scriptPath = scriptCandidates.firstWhere(
+      (candidate) => File(candidate).existsSync(),
+      orElse: () => scriptCandidates.first,
+    );
+
+    final process = await Process.start(_executablePath!, [
+      scriptPath,
+      abfFilePath,
+    ], workingDirectory: _pythonDirPath!);
+
+    final stdoutText = await process.stdout
+        .transform(const Utf8Decoder(allowMalformed: true))
+        .join();
+    final stderrText = await process.stderr
+        .transform(const Utf8Decoder(allowMalformed: true))
+        .join();
+    final exitCode = await process.exitCode;
+
+    if (exitCode != 0) {
+      throw Exception(
+        'extract_info.py failed with exit code $exitCode: ${stderrText.trim()}',
+      );
+    }
+
+    return stdoutText.trim();
+  }
+
+  Future<String> generateRawPreviewCsv({
+    required String abfFilePath,
+    required String outputDir,
+    required int channel,
+    int? sweepNumber,
+  }) async {
+    final stdoutText = await runViewRawCommand(
+      abfFilePath: abfFilePath,
+      outputDir: outputDir,
+      channel: channel,
+      sweepNumber: sweepNumber,
+      exportCsv: true,
+    );
+
+    final regex = RegExp(r'Raw CSV saved at:\s*(.+)');
+    final match = regex.firstMatch(stdoutText);
+    if (match == null) {
+      throw Exception(
+        'Could not determine preview CSV path from Python output.',
+      );
+    }
+
+    final csvPath = match.group(1)?.trim();
+    if (csvPath == null || csvPath.isEmpty) {
+      throw Exception('Python reported an empty preview CSV path.');
+    }
+
+    return csvPath;
+  }
+
+  Future<String> generateRawPreviewPlot({
+    required String abfFilePath,
+    required String outputDir,
+    required int channel,
+    List<int>? selectedSweeps,
+  }) async {
+    final stdoutText = await runViewRawCommand(
+      abfFilePath: abfFilePath,
+      outputDir: outputDir,
+      channel: channel,
+      selectedSweeps: selectedSweeps,
+    );
+
+    final regex = RegExp(r'Raw plot saved at:\s*(.+)');
+    final match = regex.firstMatch(stdoutText);
+    if (match == null) {
+      throw Exception('Could not determine raw plot path from Python output.');
+    }
+
+    final plotPath = match.group(1)?.trim();
+    if (plotPath == null || plotPath.isEmpty) {
+      throw Exception('Python reported an empty raw plot path.');
+    }
+
+    return plotPath;
+  }
+
+  Future<String> runExtractPeakCurrentCommand({
+    required String abfFilePath,
+    int channel = 0,
+    int? sweepNumber,
+    double? startTime,
+    double? endTime,
+  }) async {
+    return _runMainCommandWithOutput(
+      config: {
+        'extract_peak_current': true,
+        'abf_file': abfFilePath,
+        'channel': channel,
+        'sweep_number': sweepNumber,
+        'start_time': startTime,
+        'end_time': endTime,
+      },
+      errorPrefix: 'Peak current extraction',
+    );
+  }
+
+  Future<String> runExtractIntegratedCurrentCommand({
+    required String abfFilePath,
+    int channel = 0,
+    int? sweepNumber,
+    double? startTime,
+    double? endTime,
+  }) async {
+    return _runMainCommandWithOutput(
+      config: {
+        'extract_integrated_current': true,
+        'abf_file': abfFilePath,
+        'channel': channel,
+        'sweep_number': sweepNumber,
+        'start_time': startTime,
+        'end_time': endTime,
+      },
+      errorPrefix: 'Integrated current extraction',
+    );
+  }
+
+  Future<String> runExtractCurrentStatsCommand({
+    required String abfFilePath,
+    int channel = 0,
+    int? sweepNumber,
+    double? startTime,
+    double? endTime,
+  }) async {
+    return _runMainCommandWithOutput(
+      config: {
+        'extract_current_stats': true,
+        'abf_file': abfFilePath,
+        'channel': channel,
+        'sweep_number': sweepNumber,
+        'start_time': startTime,
+        'end_time': endTime,
+      },
+      errorPrefix: 'Current stats extraction',
+    );
+  }
+
+  Future<String> runAnalyzeIvCommand({
+    required String abfFilePattern,
+    required String outputDir,
+    int clampChannel = 0,
+    int membraneChannel = 1,
+    int stimuliChannel = 2,
+    double? startTime,
+    double? endTime,
+    int eRev = 0,
+    int iRev = -60,
+    bool exportCsv = false,
+    String? exportFormat,
+  }) async {
+    return _runMainCommandWithOutput(
+      config: {
+        'analyze_iv': true,
+        'export_csv': exportCsv,
+        'abf_file': abfFilePattern,
+        'output_dir': outputDir,
+        'clamp_channel': clampChannel,
+        'membrane_channel': membraneChannel,
+        'stimuli_channel': stimuliChannel,
+        'start_time': startTime,
+        'end_time': endTime,
+        'e_rev': eRev,
+        'i_rev': iRev,
+        'export_format': exportFormat,
+      },
+      errorPrefix: 'I-V analysis',
+    );
   }
 }

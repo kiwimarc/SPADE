@@ -75,9 +75,8 @@ class _ImportViewState extends State<ImportView> {
                     plotDataEnabled: _viewModel.hasLoadedRawInfo,
                     plotDataActive: false,
                     linearRelationshipEnabled:
-                      _viewModel.hasEnabledDownstreamTabs,
-                    eiRelationshipEnabled:
-                      _viewModel.hasEnabledDownstreamTabs,
+                        _viewModel.hasEnabledDownstreamTabs,
+                    eiRelationshipEnabled: _viewModel.hasEnabledDownstreamTabs,
                     onRawDataTap: () => Navigator.of(context).push(
                       PageRouteBuilder(
                         pageBuilder: (_, _, _) => RawDataView(
@@ -169,7 +168,7 @@ class _ImportViewState extends State<ImportView> {
       text: TextSpan(
         style: TextStyle(
           color: const Color(0xFF222831),
-          fontSize: 48 * scale,
+          fontSize: 43 * scale,
           fontFamily: 'Inter',
           fontWeight: FontWeight.w500,
         ),
@@ -235,11 +234,10 @@ class _ImportViewState extends State<ImportView> {
                         itemCount: _viewModel.selectedFilePaths.length,
                         separatorBuilder: (_, _) =>
                             SizedBox(height: 10 * scale),
-                        itemBuilder: (context, index) =>
-                            _buildFileRow(
-                              scale,
-                              _viewModel.selectedFilePaths[index],
-                            ),
+                        itemBuilder: (context, index) => _buildFileRow(
+                          scale,
+                          _viewModel.selectedFilePaths[index],
+                        ),
                       ),
                     ),
             ),
